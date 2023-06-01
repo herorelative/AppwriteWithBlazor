@@ -4,8 +4,8 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [ master ]
-permissions:
-  contents: write
+#permissions:
+#  contents: write
 jobs:
   deploy-to-github-pages:
     # use ubuntu-latest image to run steps on
@@ -44,7 +44,7 @@ jobs:
       uses: JamesIves/github-pages-deploy-action@v4
       with:
         token: ${{ secrets.TOKEN }}
-        base_branch: master # The branch the action should deploy from.
+        #base_branch: master # The branch the action should deploy from.
         branch: github-pages # The branch the action should deploy to.
         folder: release/wwwroot # The folder the action should deploy.
-        #single-commit: true
+        single-commit: true
