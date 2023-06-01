@@ -1,0 +1,258 @@
+﻿@page "/projects"
+@attribute [Authorize]
+@inject IAuthorizationService authenticationService
+@inject IProjectProvider project;
+@inject IMessageService _message;
+@inject IAppStates _states;
+@inject NavigationManager _navigationManager;
+
+<AuthorizeView>
+    <NotAuthorized>
+        <RedirectToLogin />
+    </NotAuthorized>
+</AuthorizeView>
+
+<PageTitle>Just do it - Projects</PageTitle>
+
+<GridRow Align="middle">
+    <GridCol Span="10">
+        <Title Level="1">Projects</Title>
+        <Paragraph Style="letter-spacing:2px;font-size:18px;max-width:650px">
+            Project is like category for all of your tasks, will help you to categorize all of your tasks.
+        </Paragraph>
+    </GridCol>
+    <GridCol Span="8" Offset="6" Style="text-align:right">
+        <Button Type="@ButtonType.Primary" OnClick="@(()=>ShowModal())">
+            New Project
+        </Button>
+    </GridCol>
+</GridRow>
+
+@if(Data.Count == 0 && !InitLoading)
+{
+    <EmptyState />
+}
+else
+{
+    <AntList Class="demo-loadmore-list" DataSource="@Data" Size="large" ItemLayout="ListItemLayout.Horizontal" Loading="@InitLoading">
+        <ChildContent Context="item">
+            <ListItem Actions="Actions(item)">
+                <ListItemMeta Description="@item.Description">
+                    <TitleTemplate>
+                        <a onclick="@(()=>HandleSelect(item))">@item.Title &rarr;</a>
+                    </TitleTemplate>
+                </ListItemMeta>
+            </ListItem>
+        </ChildContent>
+    </AntList>
+}
+
+<Modal Title="@(Id == null ? "Add Project" : "Update Project")"
+       Visible="@_visible"
+       OnOk="@HandleOk"
+       OnCancel="@HandleCancel">
+    <Form Loading="loading" 
+        Model="@model"
+        LabelColSpan="8"
+        WrapperColSpan="16"
+        Layout="@FormLayout.Vertical"
+        Size="@AntSizeLDSType.Large"
+        OnFinish="OnFinish"
+        OnFinishFailed="OnFinishFailed"
+    @ref="@_form">
+        <FormItem Label="Title">
+            <Input @bind-Value="@context.Title" MaxLength="50" />
+        </FormItem>
+        <FormItem Label="Description">
+            <TextArea @bind-Value="@context.Description" MaxLength="256" />
+        </FormItem>
+    </Form>
+</Modal>
+
+<style>
+
+    .demo-loadmore-list {
+        min-height: 350px;
+    }
+
+    .demo-loadmore-btn-content {
+        text-align: center;
+        margin-top: 12px;
+        height: 32px;
+        line-height: 32px;
+    }
+</style>
+
+@code {
+    #region original form coding
+    private string Id { get; set; }
+
+    private ProjectCreateModel model = new();
+
+    private void OnFinishFailed(EditContext editContext)
+    {
+        Console.WriteLine($"Failed:{JsonSerializer.Serialize(model)}");
+    }
+
+    bool loading = false;
+
+    void toggle(bool value) => loading = value;
+
+    #endregion
+
+    #region original modal coding
+
+    bool _visible = false;
+
+    private void HandleSelect(Project item)
+    {
+        _states.SetCurrentProject(item);
+        _navigationManager.NavigateTo($"/projects/{item.Id}");
+    }
+
+    private void ShowModal()
+    {
+        _visible = true;
+    }
+
+    private void HandleCancel(MouseEventArgs e)
+    {
+        Id = null;
+        model = new();
+        _visible = false;
+    }
+
+    #endregion
+
+    /*
+    * Careful!
+    *
+    * next bind submit event to modal OK button
+     */
+
+    private Form<ProjectCreateModel> _form;
+
+    /// <summary>
+    /// when form is submited, close the modal
+    /// </summary>
+    /// <param name="args"></param>
+    private async Task OnFinish(EditContext editContext)
+    {
+        if(Id == null)
+        {
+            await project.Create(model);
+            _visible = false;
+            model = new();
+            Data = await GetData();
+        }
+        else
+        {
+            await project.Update(Id, model);
+            _visible = false;
+            Id = null;
+            model = new();
+            Data = await GetData();
+        }
+    }
+
+    /// <summary>
+    /// on modal OK button is click, submit form manually
+    /// </summary>
+    /// <param name="e"></param>
+    private void HandleOk(MouseEventArgs e)
+    {
+        _form.Submit();
+    }
+
+    static RenderFragment Edit(Action onClick)
+    {
+        return builder =>
+        {
+            builder.OpenElement(0, "a");
+            builder.AddAttribute(1, "onclick", onClick);
+            builder.AddContent(2, "Edit");
+            builder.CloseElement();
+        };
+    }
+
+    static RenderFragment Remove(Action onClick)
+    {
+        return builder =>
+        {
+            builder.OpenElement(0, "a");
+            builder.AddAttribute(1, "onclick", onClick);
+            builder.AddContent(2, "Delete");
+            builder.CloseElement();
+        };
+    }
+
+    //public RenderFragment[] actions = new[] { edit, remove };
+    public RenderFragment[] Actions(Project document)
+    {
+        return new RenderFragment[]
+        {
+            Edit(() => EditClicked(document)),
+            Remove(async () => await RemoveClicked(document))
+        };
+    }
+
+    private void EditClicked(Project document)
+    {
+        //Console.WriteLine(document.Id);
+        Id = document.Id;
+        model = new ProjectCreateModel
+        {
+            Title = document.Title,
+            Description = document.Description,
+        };
+
+        ShowModal();
+        StateHasChanged();
+    }
+
+    private async Task RemoveClicked(Project document)
+    {
+        InitLoading = true;
+        if(await project.Delete(document.Id))
+        {
+            Data.Remove(document);
+            await _message.Success("Record deleted successfully.");
+            InitLoading = false;
+            StateHasChanged();
+        }
+        else
+        {
+            InitLoading = false;
+            await _message.Error("Something went wrong while deleteing a record.");
+        }
+    }
+
+    public List<Project> Data { get; set; } = new();
+
+    public bool InitLoading { get; set; } = true;
+
+    public bool Loading { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Data = await GetData();
+        InitLoading = false;
+        await base.OnInitializedAsync();
+    }
+
+    public async Task<List<Project>> GetData()
+    {
+        try
+        {
+            //list records
+            var projects = await project.List();
+            
+            return projects.Documents;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            return new List<Project>();
+        }
+    }
+}

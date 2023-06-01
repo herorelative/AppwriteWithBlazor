@@ -1,0 +1,50 @@
+﻿@inject NavigationManager navigationManager;
+@page "/"
+
+<AuthorizeView>
+    <Authorized>
+        <RedirectToProjects />
+    </Authorized>
+</AuthorizeView>
+
+<PageTitle>Just do it - Home</PageTitle>
+
+<Title Level="1">Welcome to Just do it!</Title>
+<Paragraph Style="letter-spacing:2px;font-size:18px;max-width:850px">
+    The main common cause of mental clutter is continually putting off decisions and tasks instead of tackling them especially if it involves something challenging, or something that you feel is stressful. Just do it will help you, by taking those mental clutter and stress for you.
+    <br /><br />
+    <Button Type="@ButtonType.Primary" OnClick="ToRegister">
+        Get Started Now!
+    </Button>
+</Paragraph>
+
+<Title Level="2">How this tool was build?</Title>
+<Paragraph Style="letter-spacing:2px;font-size:18px;max-width:850px">
+    While I was just playing around and observing possible outcome mixing avaliable open-source projects and libraries. This tool was born out of the followings: 
+    <br /><br />
+    <ul>
+        <li><a href="https://appwrite.io/" target="_blank">Appwrite</a> - the backend and infra</li>
+        <li><a href="https://learn.microsoft.com/en-us/aspnet/core/blazor/?WT.mc_id=DT-MVP-5003987&view=aspnetcore-6.0" target="_blank">Blazor</a> - SPA frontend with .NET Core</li>
+        <li><a href="https://antblazor.com/en-US/" target="_blank">Ant Design</a> - for design system and reusable components</li>
+        <li><a href="https://pages.github.com/">GitHub Page</a> - Hosted and Published on.</li>
+    </ul>
+</Paragraph>
+
+<Title Level="2">How do I utilize Just do it! to work for me?</Title>
+<Paragraph Style="letter-spacing:2px;font-size:18px;max-width:850px">
+    The best process in this case is one that's easy to grasp and do: Stop, status, selection, focus, finish, and next. <br /><br />
+    <ol>
+        <li>Stop everything.</li>
+        <li>Take status of everything. Where does each project broadly stand in terms of size, scope, completion, and unknowns.</li>
+        <li>Pick a smaller project that's almost done, put it on this tool and redirect all resources to finishing that one up before working on anything else. Get something finished. Establish "completion discipline".</li>
+        <li>Only move on to the next project once the current project is 100% done.</li>
+        <li>Do not add to the pile. No more new projects.</li>
+    </ol>
+</Paragraph>
+
+@code{
+    private async Task ToRegister()
+    {
+        navigationManager.NavigateTo("/register");
+    }
+}

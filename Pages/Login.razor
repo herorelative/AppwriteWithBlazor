@@ -1,0 +1,65 @@
+﻿@using System.ComponentModel.DataAnnotations;
+@using System.Text.Json;
+@inject Providers.SimpleAuthStateProvider authStateProvider;
+@inject NavigationManager navigationManager;
+
+@page "/login"
+
+<AuthorizeView>
+    <Authorized>
+        <RedirectToProjects />
+    </Authorized>
+</AuthorizeView>
+
+<PageTitle>Just do it - Login</PageTitle>
+
+<Title Level="1">Login</Title>
+<Paragraph>Don't have an account? <a href="/register">Sign Up</a></Paragraph>
+
+<Form Layout="@FormLayout.Vertical"
+      Loading="loading"
+      Model="@model"
+      Size="@AntSizeLDSType.Large"
+      LabelColSpan="8"
+      WrapperColSpan="16"
+      OnFinish="OnFinish"
+      OnFinishFailed="OnFinishFailed">
+    <FormItem Label="Email">
+        <Input @bind-Value="@context.Email" />
+    </FormItem>
+    <FormItem Label="Password">
+        <InputPassword @bind-Value="@context.Password" />
+    </FormItem>
+    <FormItem>
+        <Button Type="@ButtonType.Primary" HtmlType="submit">
+            Submit
+        </Button>
+    </FormItem>
+</Form>
+
+@code
+{
+    private UserCreateModel model = new UserCreateModel();
+
+    private async Task OnFinish(EditContext editContext)
+    {
+        toggle(true);
+
+        await authStateProvider.Login(model);
+
+        navigationManager.NavigateTo("/projects");
+
+        toggle(false);
+
+        Console.WriteLine($"Success:{JsonSerializer.Serialize(model)}");
+    }
+
+    private void OnFinishFailed(EditContext editContext)
+    {
+        Console.WriteLine($"Failed:{JsonSerializer.Serialize(model)}");
+    }
+
+    bool loading = false;
+
+    void toggle(bool value) => loading = value;
+}

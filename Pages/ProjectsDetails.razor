@@ -1,0 +1,305 @@
+﻿@page "/projects/{ProjectId}"
+@attribute [Authorize]
+@using AppwriteWithBlazor.Models;
+@inject ITodoProvider todo;
+@inject IMessageService _message;
+@inject NavigationManager _navigationManager;
+@inject IAppStates _states;
+
+<AuthorizeView>
+    <NotAuthorized>
+        <RedirectToLogin />
+    </NotAuthorized>
+</AuthorizeView>
+
+<PageTitle>Just do it - Project Details</PageTitle>
+
+<GridRow Align="middle">
+    <GridCol Span="10">
+        <Title Level="1">@SelectedProject.Title</Title>
+        <Paragraph Style="letter-spacing:2px;font-size:18px;max-width:650px">
+            @SelectedProject.Description
+        </Paragraph>
+    </GridCol>
+    <GridCol Span="8" Offset="6" Style="text-align:right">
+        <Button Type="@ButtonType.Primary" OnClick="@(()=>ShowModal())">
+            New Todo
+        </Button>
+    </GridCol>
+</GridRow>
+
+@if (Data.Count == 0 && !InitLoading)
+{
+    <EmptyState />
+}
+else
+{
+    <AntList Class="demo-loadmore-list" DataSource="@Data" Size="large" ItemLayout="ListItemLayout.Horizontal" Loading="@InitLoading">
+        <ChildContent Context="item">
+            <ListItem Actions="Actions(item)">
+                <ListItemMeta>
+                    <TitleTemplate>
+                        <a>@item.Content</a>
+                    </TitleTemplate>
+                </ListItemMeta>
+                <div>
+                    @if (item.IsDone)
+                    {
+                        <Tag Style="cursor:pointer" Color="success" OnClick="@(()=>DoneClicked(item))">DONE</Tag>
+                    }
+                    else
+                    {
+                        <Tag Style="cursor:pointer" Color="default" OnClick="@(()=>DoneClicked(item))">NOT DONE</Tag>
+                    }
+                </div>
+            </ListItem>
+        </ChildContent>
+    </AntList>
+}
+
+<Modal Title="@(Id == null ? "Add Todo" : "Update Todo")"
+       Visible="@_visible"
+       OnOk="@HandleOk"
+       OnCancel="@HandleCancel">
+    <Form Loading="loading"
+          Model="@model"
+          LabelColSpan="8"
+          WrapperColSpan="16"
+          Layout="@FormLayout.Vertical"
+          Size="@AntSizeLDSType.Large"
+          OnFinish="OnFinish"
+          OnFinishFailed="OnFinishFailed"
+    @ref="@_form">
+        <FormItem Label="Content">
+            <Input @bind-Value="@context.Content" MaxLength="255" />
+        </FormItem>
+        <FormItem Label="Is Done">
+            <Checkbox @bind-Value="@context.IsDone" />
+        </FormItem>
+    </Form>
+</Modal>
+
+<style>
+
+    .demo-loadmore-list {
+        min-height: 350px;
+    }
+
+    .demo-loadmore-btn-content {
+        text-align: center;
+        margin-top: 12px;
+        height: 32px;
+        line-height: 32px;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string? ProjectId { get; set; }
+    private string Id { get; set; }
+
+    private TodoCreateModel model = new();
+
+    private void OnFinishFailed(EditContext editContext)
+    {
+        Console.WriteLine($"Failed:{JsonSerializer.Serialize(model)}");
+    }
+
+    bool loading = false;
+
+    void toggle(bool value) => loading = value;
+
+    private Project SelectedProject { get; set; } = new();
+
+    protected override Task OnParametersSetAsync()
+    {
+        var data = _states.GetCurrentProject();
+        Console.WriteLine(data?.Id != ProjectId);
+        if (data?.Id != ProjectId)
+        {
+            _navigationManager.NavigateTo("/projects");
+        }
+        return base.OnParametersSetAsync();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var data = _states.GetCurrentProject();
+
+        SelectedProject = data;
+        Data = await GetData();
+        InitLoading = false;
+        await base.OnInitializedAsync();
+    }
+
+    bool _visible = false;
+
+    private void ShowModal()
+    {
+        _visible = true;
+    }
+
+    private void HandleCancel(MouseEventArgs e)
+    {
+        Id = null;
+        model = new();
+        _visible = false;
+    }
+
+    private Form<TodoCreateModel> _form;
+
+    /// <summary>
+    /// when form is submited, close the modal
+    /// </summary>
+    /// <param name="args"></param>
+    private async Task OnFinish(EditContext editContext)
+    {
+        if (Id == null)
+        {
+            model.ProjectId = SelectedProject.Id;
+            await todo.Create(model);
+            _visible = false;
+            model = new();
+            Data = await GetData();
+        }
+        else
+        {
+            model.ProjectId = SelectedProject.Id;
+            await todo.Update(Id, model);
+            _visible = false;
+            Id = null;
+            model = new();
+            Data = await GetData();
+        }
+    }
+
+    /// <summary>
+    /// on modal OK button is click, submit form manually
+    /// </summary>
+    /// <param name="e"></param>
+    private void HandleOk(MouseEventArgs e)
+    {
+        _form.Submit();
+    }
+
+    static RenderFragment Done(Action onClick)
+    {
+        return builder =>
+        {
+            builder.OpenElement(0, "a");
+            builder.AddAttribute(1, "onclick", onClick);
+            builder.AddContent(2, "Done");
+            builder.CloseElement();
+        };
+    }
+
+    static RenderFragment Edit(Action onClick)
+    {
+        return builder =>
+        {
+            builder.OpenElement(0, "a");
+            builder.AddAttribute(1, "onclick", onClick);
+            builder.AddContent(2, "Edit");
+            builder.CloseElement();
+        };
+    }
+
+    static RenderFragment Remove(Action onClick)
+    {
+        return builder =>
+        {
+            builder.OpenElement(0, "a");
+            builder.AddAttribute(1, "onclick", onClick);
+            builder.AddContent(2, "Delete");
+            builder.CloseElement();
+        };
+    }
+
+    //public RenderFragment[] actions = new[] { edit, remove };
+    public RenderFragment[] Actions(Todo document)
+    {
+        return new RenderFragment[]
+        {
+            //Done(async () => await DoneClicked(document)),
+            Edit(() => EditClicked(document)),
+            Remove(async () => await RemoveClicked(document))
+        };
+    }
+
+    private async Task DoneClicked(Todo document)
+    {
+        InitLoading = true;
+        var result = await todo.Update(document.Id, new TodoCreateModel
+        {
+            Content = document.Content,
+            IsDone = !document.IsDone,
+            ProjectId = document.ProjectId
+        });
+        
+        if (result)
+        {
+            //_visible = false;
+            Data = await GetData();
+            await _message.Success("Record updated successfully.");
+            //StateHasChanged();
+            InitLoading = false;
+        }
+        else
+        {
+            await _message.Error("Something went wrong while deleteing a record.");
+            InitLoading = false;
+        }
+    }
+
+    private void EditClicked(Todo document)
+    {
+        Id = document.Id;
+        model = new TodoCreateModel
+            {
+                Content = document.Content,
+                IsDone = document.IsDone,
+            };
+
+        ShowModal();
+        StateHasChanged();
+    }
+
+    private async Task RemoveClicked(Todo document)
+    {
+        InitLoading = true;
+        if (await todo.Delete(document.Id))
+        {
+            Data.Remove(document);
+            await _message.Success("Record deleted successfully.");
+            InitLoading = false;
+            StateHasChanged();
+        }
+        else
+        {
+            InitLoading = false;
+            await _message.Error("Something went wrong while deleteing a record.");
+        }
+    }
+
+    public List<Todo> Data { get; set; } = new();
+
+    public bool InitLoading { get; set; } = true;
+
+    public bool Loading { get; set; } = false;
+
+    public async Task<List<Todo>> GetData()
+    {
+        try
+        {
+            //list records
+            var todos = await todo.List(SelectedProject.Id);
+
+            return todos.Documents;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            return new List<Todo>();
+        }
+    }
+}

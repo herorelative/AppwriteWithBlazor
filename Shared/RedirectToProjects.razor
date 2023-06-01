@@ -1,0 +1,10 @@
+﻿@inject NavigationManager NavigationManager
+
+@code {
+    protected override void OnInitialized()
+    {
+        var returnUrl = NavigationManager.Uri;
+        //NavigationManager.NavigateTo($"login?returnUrl={returnUrl}", forceLoad: true);
+        NavigationManager.NavigateTo("/projects");
+    }
+}

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Just do it!</title>
+    <base href="/" />
+    <link href="_content/AntDesign/css/ant-design-blazor.css" rel="stylesheet" />
+    <link href="manifest.json" rel="manifest" />
+    <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png" />
+    <style>
+        .example {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+            margin-bottom: 20px;
+            padding: 30px 50px;
+            margin: 0px 0;
+            min-width: 100vw;
+            min-height: 100vh;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="example">
+            <Spin Tip="Loading..." />
+        </div>
+    </div>
+    <!--<Loading />-->
+    <!--<div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>-->
+    <Alert Type="@AlertType.Error"
+           Message="Error"
+           Description="An unhandled error has occurred."
+           ShowIcon="true"
+           Closable />
+    <script src="interop.js"></script>
+    <script src="_content/AntDesign/js/ant-design-blazor.js"></script>
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script>navigator.serviceWorker.register('service-worker.js');</script>
+</body>
+
+</html>

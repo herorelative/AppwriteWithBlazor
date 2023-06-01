@@ -1,0 +1,64 @@
+﻿@inject IAuthProvider authStateProvider;
+@inject NavigationManager navigationManager;
+
+@page "/register"
+
+<AuthorizeView>
+    <Authorized>
+        <RedirectToProjects />
+    </Authorized>
+</AuthorizeView>
+
+<PageTitle>Just do it - Register</PageTitle>
+
+<Title Level="1">Register Now!</Title>
+<Paragraph>Already have an account? <a href="/login">Login</a></Paragraph>
+
+<Form Layout="@FormLayout.Vertical"
+      Loading="loading"
+      Model="@model"
+      Size="@AntSizeLDSType.Large"
+      LabelColSpan="8"
+      WrapperColSpan="16"
+      OnFinish="OnFinish"
+      OnFinishFailed="OnFinishFailed">
+    <FormItem Label="Email">
+        <Input @bind-Value="@context.Email" />
+    </FormItem>
+    <FormItem Label="Password">
+        <InputPassword @bind-Value="@context.Password" />
+    </FormItem>
+
+    <FormItem>
+        <Button Type="@ButtonType.Primary" HtmlType="submit">
+            Submit
+        </Button>
+    </FormItem>
+</Form>
+
+@code
+{
+    private UserCreateModel model = new UserCreateModel();
+
+    private async Task OnFinish(EditContext editContext)
+    {
+        toggle(true);
+        
+        await authStateProvider.Register(model);
+
+        navigationManager.NavigateTo("/login");
+
+        toggle(false);
+        
+        Console.WriteLine($"Success:{JsonSerializer.Serialize(model)}");
+    }
+
+    private void OnFinishFailed(EditContext editContext)
+    {
+        Console.WriteLine($"Failed:{JsonSerializer.Serialize(model)}");
+    }
+
+    bool loading = false;
+
+    void toggle(bool value) => loading = value;
+}
