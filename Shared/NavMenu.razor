@@ -1,39 +1,53 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">AppwriteBlazorHostedApp</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+﻿@using AppwriteWithBlazor.Providers;
+@inject SimpleAuthStateProvider _provider;
+@inject NavigationManager _navigationManager;
+
+<Sider Collapsible Collapsed="@IsCollesped" CollapsedChanged="@(()=>onChange())">
+    <div style="margin:16px;display:flex;align-items:center;">
+        <span style="padding:2px;font-size:26px;justify-items:center">📝</span>
+        <span style="font-size:18px;font-weight:bold;margin-left:@(IsCollesped ? "0px":"2px");color:#fff; display:@(IsCollesped ? "none":"inline-block")">TODOs</span>
     </div>
-</div>
+    <Menu Theme="MenuTheme.Dark" DefaultSelectedKeys=@(new[]{"1"}) Mode="MenuMode.Inline">
+        <AuthorizeView>
+            <Authorized>
+                <MenuItem Key="1" RouterLink="/projects">
+                    <Icon Type="pie-chart" Theme="outline" />
+                    <span>Projects</span>
+                </MenuItem>
+                <MenuItem Key="2" OnClick="Logout">
+                    <Icon Type="file" Theme="outline" /> <span>Logout</span>
+                </MenuItem>
+            </Authorized>
+            <NotAuthorized>
+                <MenuItem Key="3" RouterLink="/">
+                    <Icon Type="pie-chart" Theme="outline" />
+                    <span>Home</span>
+                </MenuItem>
+                <MenuItem Key="4" RouterLink="/login">
+                    <Icon Type="file" Theme="outline" />
+                    <span>Login</span>
+                </MenuItem>
+                <MenuItem Key="5" RouterLink="/register">
+                    <Icon Type="file" Theme="outline" />
+                    <span>Register</span>
+                </MenuItem>
+            </NotAuthorized>
+        </AuthorizeView>
+    </Menu>
+</Sider>
 
-<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="oi oi-home" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="oi oi-plus" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="fetchdata">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Fetch data
-            </NavLink>
-        </div>
-    </nav>
-</div>
-
-@code {
-    private bool collapseNavMenu = true;
-
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
+@code
+{
+    private bool IsCollesped = false;
+    private async Task Logout()
     {
-        collapseNavMenu = !collapseNavMenu;
+        await _provider.Logout();
+        _navigationManager.NavigateTo("/");
+    }
+
+    public bool onChange()
+    {
+        IsCollesped = !IsCollesped;
+        return IsCollesped;
     }
 }
