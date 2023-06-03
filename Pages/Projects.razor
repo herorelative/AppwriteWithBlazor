@@ -51,7 +51,8 @@ else
 <Modal Title="@(Id == null ? "Add Project" : "Update Project")"
        Visible="@_visible"
        OnOk="@HandleOk"
-       OnCancel="@HandleCancel">
+       OnCancel="@HandleCancel"
+        ConfirmLoading="@loading">
     <Form Loading="loading" 
         Model="@model"
         LabelColSpan="8"
@@ -75,7 +76,8 @@ else
        OnOk="@HandleRemove"
        OnCancel="@HideConfirmModal"
        OkText="@("Yes")"
-       CancelText="@("No")">
+       CancelText="@("No")"
+        ConfirmLoading="@loading">
     <p>@_modelText</p>
 </Modal>
 
@@ -148,12 +150,14 @@ else
     /// <param name="args"></param>
     private async Task OnFinish(EditContext editContext)
     {
+        toggle(true);
         if(Id == null)
         {
             await project.Create(model);
             _visible = false;
             model = new();
             Data = await GetData();
+            toggle(false);
         }
         else
         {
@@ -162,6 +166,7 @@ else
             Id = null;
             model = new();
             Data = await GetData();
+            toggle(false);
         }
     }
 
@@ -239,16 +244,19 @@ else
 
     private async Task HandleRemove()
     {
+        toggle(true);
         if (await project.Delete(_selectedProject.Id))
         {
             Data.Remove(_selectedProject);
             await _message.Success("Record deleted successfully.");
+            toggle(false);
             HideConfirmModal();
             //StateHasChanged();
         }
         else
         {
             await _message.Error("Something went wrong while deleteing a record.");
+            toggle(false);
             HideConfirmModal();
         }
     }

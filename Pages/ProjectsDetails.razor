@@ -60,7 +60,8 @@ else
 <Modal Title="@(Id == null ? "Add Todo" : "Update Todo")"
        Visible="@_visible"
        OnOk="@HandleOk"
-       OnCancel="@HandleCancel">
+       OnCancel="@HandleCancel"
+        ConfirmLoading="@loading">
     <Form Loading="loading"
           Model="@model"
           LabelColSpan="8"
@@ -84,7 +85,8 @@ else
        OnOk="@HandleRemove"
        OnCancel="@HideConfirmModal"
        OkText="@("Yes")"
-       CancelText="@("No")">
+       CancelText="@("No")" 
+       ConfirmLoading="@loading">
     <p>@_modelText</p>
 </Modal>
 
@@ -163,6 +165,7 @@ else
     /// <param name="args"></param>
     private async Task OnFinish(EditContext editContext)
     {
+        toggle(true);
         if (Id == null)
         {
             model.ProjectId = SelectedProject.Id;
@@ -170,6 +173,7 @@ else
             _visible = false;
             model = new();
             Data = await GetData();
+            toggle(false);
         }
         else
         {
@@ -179,6 +183,7 @@ else
             Id = null;
             model = new();
             Data = await GetData();
+            toggle(false);
         }
     }
 
@@ -244,7 +249,7 @@ else
             IsDone = !document.IsDone,
             ProjectId = document.ProjectId
         });
-        
+
         if (result)
         {
             //_visible = false;
@@ -292,16 +297,19 @@ else
 
     private async Task HandleRemove()
     {
+        toggle(true);
         if (await todo.Delete(_selectedTodo.Id))
         {
             Data.Remove(_selectedTodo);
             await _message.Success("Record deleted successfully.");
+            toggle(false);
             HideConfirmModal();
             //StateHasChanged();
         }
         else
         {
             await _message.Error("Something went wrong while deleteing a record.");
+            toggle(false);
             HideConfirmModal();
         }
     }
