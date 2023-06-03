@@ -79,6 +79,15 @@ else
     </Form>
 </Modal>
 
+<Modal Title="@("Delete Confirm?")"
+       Visible="@_visibleConfirm"
+       OnOk="@HandleRemove"
+       OnCancel="@HideConfirmModal"
+       OkText="@("Yes")"
+       CancelText="@("No")">
+    <p>@_modelText</p>
+</Modal>
+
 <style>
 
     .demo-loadmore-list {
@@ -264,20 +273,36 @@ else
         StateHasChanged();
     }
 
+    bool _visibleConfirm = false;
+    bool _confirmLoading = false;
+    string _modelText = "Are you sure to remove";
+    Todo _selectedTodo;
     private async Task RemoveClicked(Todo document)
     {
-        InitLoading = true;
-        if (await todo.Delete(document.Id))
+        _visibleConfirm = true;
+        _modelText = $"Are you sure to remove todo {document.Content}?";
+        _selectedTodo = document;
+        StateHasChanged();
+    }
+
+    private void HideConfirmModal()
+    {
+        _visibleConfirm = false;
+    }
+
+    private async Task HandleRemove()
+    {
+        if (await todo.Delete(_selectedTodo.Id))
         {
-            Data.Remove(document);
+            Data.Remove(_selectedTodo);
             await _message.Success("Record deleted successfully.");
-            InitLoading = false;
-            StateHasChanged();
+            HideConfirmModal();
+            //StateHasChanged();
         }
         else
         {
-            InitLoading = false;
             await _message.Error("Something went wrong while deleteing a record.");
+            HideConfirmModal();
         }
     }
 

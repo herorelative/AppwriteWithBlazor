@@ -5,6 +5,7 @@
 @inject IMessageService _message;
 @inject IAppStates _states;
 @inject NavigationManager _navigationManager;
+@inject ModalService _modalService;
 
 <AuthorizeView>
     <NotAuthorized>
@@ -67,6 +68,15 @@ else
             <TextArea @bind-Value="@context.Description" MaxLength="256" />
         </FormItem>
     </Form>
+</Modal>
+
+<Modal Title="@("Delete Confirm?")"
+       Visible="@_visibleConfirm"
+       OnOk="@HandleRemove"
+       OnCancel="@HideConfirmModal"
+       OkText="@("Yes")"
+       CancelText="@("No")">
+    <p>@_modelText</p>
 </Modal>
 
 <style>
@@ -210,20 +220,36 @@ else
         StateHasChanged();
     }
 
+    bool _visibleConfirm = false;
+    bool _confirmLoading = false;
+    string _modelText = "Are you sure to remove";
+    Project _selectedProject;
     private async Task RemoveClicked(Project document)
     {
-        InitLoading = true;
-        if(await project.Delete(document.Id))
+        _visibleConfirm = true;
+        _modelText = $"Are you sure to remove project {document.Title}?";
+        _selectedProject = document;
+        StateHasChanged();
+    }
+
+    private void HideConfirmModal()
+    {
+        _visibleConfirm = false;
+    }
+
+    private async Task HandleRemove()
+    {
+        if (await project.Delete(_selectedProject.Id))
         {
-            Data.Remove(document);
+            Data.Remove(_selectedProject);
             await _message.Success("Record deleted successfully.");
-            InitLoading = false;
-            StateHasChanged();
+            HideConfirmModal();
+            //StateHasChanged();
         }
         else
         {
-            InitLoading = false;
             await _message.Error("Something went wrong while deleteing a record.");
+            HideConfirmModal();
         }
     }
 
