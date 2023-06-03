@@ -39,7 +39,11 @@
 
 @code
 {
-    private UserCreateModel model = new UserCreateModel();
+    private UserCreateModel model = new UserCreateModel()
+    {
+        Email = "tester@mail.com",
+        Password = "password"
+    };
 
     private async Task OnFinish(EditContext editContext)
     {
